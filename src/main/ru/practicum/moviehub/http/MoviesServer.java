@@ -29,8 +29,4 @@ public class MoviesServer {
         server.stop(0);
         System.out.println("Сервер остановлен");
     }
-
-    public MoviesStore getStore() {
-        return store;
-    }
 }

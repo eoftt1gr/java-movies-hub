@@ -32,12 +32,14 @@ public class MoviesApiTest {
     private static final String BASE = "http://localhost:8080";
 
     private static MoviesServer server;
+    private static MoviesStore store;
     private static HttpClient client;
     private static Gson gson;
 
     @BeforeAll
     static void beforeAll() {
-        server = new MoviesServer(new MoviesStore(), SOCKET);
+        store = new MoviesStore();
+        server = new MoviesServer(store, SOCKET);
         server.start();
 
         client = HttpClient.newBuilder()
@@ -49,7 +51,7 @@ public class MoviesApiTest {
 
     @BeforeEach
     void beforeEach() {
-        server.getStore().clearMovies();
+        store.clearMovies();
     }
 
     @AfterAll
@@ -98,7 +100,7 @@ public class MoviesApiTest {
         assertContentType(resp);
 
         String actual = resp.body();
-        String expected = gson.toJson(server.getStore().getMovies());
+        String expected = gson.toJson(store.getMovies());
 
         assertEquals(expected, actual);
     }
@@ -108,10 +110,10 @@ public class MoviesApiTest {
             throws IOException, InterruptedException {
 
         Movie expected = new Movie("title", 2000);
-        server.getStore().addMovie(expected);
+        store.addMovie(expected);
 
         HttpRequest req = HttpRequest.newBuilder()
-                .uri(URI.create(BASE + "/movies/1"))
+                .uri(URI.create(BASE + "/movies/1/4toto"))
                 .GET()
                 .build();
 
@@ -132,7 +134,7 @@ public class MoviesApiTest {
     void getMovieById_ifMovieDoesNotExist_returns404()
             throws IOException, InterruptedException {
 
-        server.getStore().addMovie(new Movie("title", 2000));
+        store.addMovie(new Movie("title", 2000));
 
         HttpRequest req = HttpRequest.newBuilder()
                 .uri(URI.create(BASE + "/movies/2"))
@@ -149,7 +151,7 @@ public class MoviesApiTest {
     void getMovieById_ifIdIsNotNumber_returns400()
             throws IOException, InterruptedException {
 
-        server.getStore().addMovie(new Movie("title", 2000));
+        store.addMovie(new Movie("title", 2000));
 
         HttpRequest req = HttpRequest.newBuilder()
                 .uri(URI.create(BASE + "/movies/s"))
@@ -266,7 +268,7 @@ public class MoviesApiTest {
     void deleteMovie_ifMovieExists_returns204()
             throws IOException, InterruptedException {
 
-        server.getStore().addMovie(new Movie("title", 2000));
+        store.addMovie(new Movie("title", 2000));
 
         HttpRequest req = HttpRequest.newBuilder()
                 .uri(URI.create(BASE + "/movies/1"))
@@ -304,7 +306,7 @@ public class MoviesApiTest {
         createSomeMovies();
 
         HttpRequest req = HttpRequest.newBuilder()
-                .uri(URI.create(BASE + "/movies?year=2000"))
+                .uri(URI.create(BASE + "/movies?year=2000%20&id=30"))
                 .GET()
                 .build();
 
@@ -319,16 +321,16 @@ public class MoviesApiTest {
         List<Movie> actual =
                 gson.fromJson(resp.body(), new ListOfMoviesTypeToken().getType());
 
-        List<Movie> expected = server.getStore().getMoviesByYear(2000);
+        List<Movie> expected = store.getMoviesByYear(2000);
 
         assertEquals(expected, actual);
     }
 
     private static void createSomeMovies() {
-        server.getStore().addMovie(new Movie("а", 2000));
-        server.getStore().addMovie(new Movie("b", 2000));
-        server.getStore().addMovie(new Movie("c", 2000));
-        server.getStore().addMovie(new Movie("d", 2001));
+        store.addMovie(new Movie("а", 2000));
+        store.addMovie(new Movie("b", 2000));
+        store.addMovie(new Movie("c", 2000));
+        store.addMovie(new Movie("d", 2001));
     }
 
     @Test
@@ -379,7 +381,7 @@ public class MoviesApiTest {
             throws IOException, InterruptedException {
 
         HttpRequest req = HttpRequest.newBuilder()
-                .uri(URI.create(BASE + "/movies?year=20000"))
+                .uri(URI.create(BASE + "/movies?year=20000%20"))
                 .GET()
                 .build();
 
@@ -399,7 +401,7 @@ public class MoviesApiTest {
             throws IOException, InterruptedException {
 
         HttpRequest req = HttpRequest.newBuilder()
-                .uri(URI.create(BASE + "/movies?year=2000&id=30"))
+                .uri(URI.create(BASE + "/movies?year=sing&id=30"))
                 .GET()
                 .build();
 

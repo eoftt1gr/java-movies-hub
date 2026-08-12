@@ -7,6 +7,9 @@ import ru.practicum.moviehub.model.Movie;
 import ru.practicum.moviehub.store.MoviesStore;
 
 import java.io.IOException;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
@@ -31,6 +34,7 @@ public class MoviesHandler extends BaseHttpHandler {
 
             case "DELETE":
                 handleDelete(ex);
+                break;
 
             default:
                 sendJson(ex, 405, new ErrorResponse("Method Not Allowed", List.of()));
@@ -75,15 +79,23 @@ public class MoviesHandler extends BaseHttpHandler {
     }
 
     private void handleGetMoviesByYear(HttpExchange ex, String query) throws IOException {
-        String[] split = query.split("=");
+        String[] parts = query.split("&");
 
-        if (split.length != 2 || !split[0].equals("year")) {
+        Optional<String> value = Arrays.stream(parts)
+                .map(split -> split.split("=", 2))
+                .filter(key -> key.length > 1 && key[0].equals("year"))
+                .map(key -> key[1])
+                .findFirst();
+
+        if (value.isEmpty()) {
             sendInvalidYear(ex);
             return;
         }
 
         try {
-            int year = Integer.parseInt(split[1]);
+            int year = Integer.parseInt(
+                    URLDecoder.decode(value.get(), StandardCharsets.UTF_8).trim()
+            );
 
             if (!validator.validateYear(year)) {
                 sendInvalidYear(ex);
@@ -138,9 +150,9 @@ public class MoviesHandler extends BaseHttpHandler {
     private Optional<Integer> getMovieId(HttpExchange exchange) {
         String[] pathParts = exchange.getRequestURI()
                 .getPath()
-                .split("/");
+                .split("/", -1);
 
-        if (pathParts.length < 3) {
+        if (pathParts.length < 3 || !pathParts[1].equals("movies")) {
             return Optional.empty();
         }
 
